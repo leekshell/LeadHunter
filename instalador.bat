@@ -1,53 +1,69 @@
 @echo off
-:: Define codificação UTF-8 para exibir acentos corretamente
+:: LeadHunter - Instalador automático (Windows)
+:: Cria um ambiente virtual, instala dependencias e o Chromium do Playwright.
 chcp 65001 > nul
 title LeadHunter - Instalador de Dependencias
 
 echo ============================================================
-echo           LEADHUNTER - INSTALADOR AUTOMATICO
+echo            LEADHUNTER - INSTALADOR AUTOMATICO
 echo ============================================================
 echo.
 
-:: 1. VERIFICA SE ESTA RODANDO COMO ADMINISTRADOR
-net session >nul 2>&1
-if %errorLevel% neq 0 (
-    echo [ERRO] Este script precisa ser executado como ADMINISTRADOR!
-    echo.
-    echo Por favor, clique com o botão direito no arquivo .bat
-    echo e selecione "Executar como administrador".
-    echo.
-    pause
-    exit /b
-)
-
-echo [OK] Permissoes de Administrador confirmadas.
-echo.
-
-:: 2. VERIFICA SE O PYTHON ESTA INSTALADO
-python --version >nul 2>&1
+:: 1. VERIFICA O PYTHON
+where python >nul 2>&1
 if %errorLevel% neq 0 (
     echo [ERRO] Python nao foi encontrado no sistema!
     echo Baixe e instale o Python em https://www.python.org/
-    echo Lembre-se de marcar a opcao "Add Python to PATH" na instalacao.
-    echo.
+    echo Marque a opcao "Add Python to PATH" na instalacao.
     pause
-    exit /b
+    exit /b 1
 )
 
-echo [1/3] Atualizando o PIP...
+for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set PYVER=%%v
+echo [OK] Python %PYVER% encontrado.
+echo.
+
+:: 2. CRIA O AMBIENTE VIRTUAL (evita conflitos com bibliotecas globais)
+set "VENV=.venv"
+if not exist "%VENV%\Scripts\python.exe" (
+    echo [1/4] Criando ambiente virtual...
+    python -m venv "%VENV%"
+    if errorlevel 1 (
+        echo [ERRO] Nao foi possivel criar o ambiente virtual.
+        pause
+        exit /b 1
+    )
+) else (
+    echo [1/4] Ambiente virtual ja existe. Pulando criacao.
+)
+
+call "%VENV%\Scripts\activate.bat"
+
+echo.
+echo [2/4] Atualizando o PIP...
 python -m pip install --upgrade pip
 
 echo.
-echo [2/3] Instalando bibliotecas Python (Requirements)...
-pip install customtkinter playwright httpx beautifulsoup4 openpyxl pillow psutil pyinstaller
+echo [3/4] Instalando bibliotecas Python (requirements.txt)...
+pip install -r requirements.txt
+if errorlevel 1 (
+    echo [ERRO] Falha ao instalar as dependencias.
+    echo Confirme a conexao com a internet e tente novamente.
+    pause
+    exit /b 1
+)
 
 echo.
-echo [3/3] Baixando e instalando o navegador Chromium para o Playwright...
-playwright install chromium
+echo [4/4] Baixando e instalando o navegador Chromium para o Playwright...
+python -m playwright install chromium
 
 echo.
 echo ============================================================
 echo      INSTALACAO CONCLUIDA COM SUCESSO! TUDO PRONTO.
 echo ============================================================
 echo.
+echo Iniciando o LeadHunter...
+echo.
+python App.py
+
 pause
