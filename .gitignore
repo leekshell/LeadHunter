@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# LeadHunter - artefatos de execução local
+leadhunter_storage.db
+leadhunter_storage.db-*
+config.json
+logs/
+relatorios/
